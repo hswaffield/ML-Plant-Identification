@@ -10,7 +10,7 @@ K.set_image_dim_ordering('tf')
 # Can make this data set way bigger, or not
 
 IMAGE_DIM = 150
-BATCH_SIZE = 4
+BATCH_SIZE = 50
 NUM_CLASS = 12
 
 # dataaugmentation tools... lots of params to tweak.
@@ -76,7 +76,7 @@ validation_generator = test_datagen.flow_from_directory(
 model.fit_generator(
         train_generator,
         steps_per_epoch=2000 // BATCH_SIZE,
-        epochs=50,
+        epochs=5,
         validation_data=validation_generator,
         validation_steps=800 // BATCH_SIZE)
 model.save_weights('first_try.h5')  # always save your weights after training or during training
