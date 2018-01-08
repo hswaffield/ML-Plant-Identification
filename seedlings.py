@@ -1,4 +1,4 @@
-from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
+from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
@@ -10,7 +10,7 @@ K.set_image_dim_ordering('tf')
 # Can make this data set way bigger, or not
 
 IMAGE_DIM = 150
-BATCH_SIZE = 50
+BATCH_SIZE = 70
 NUM_CLASS = 12
 
 # dataaugmentation tools... lots of params to tweak.
@@ -53,7 +53,7 @@ model.add(Dense(3 * IMAGE_DIM * IMAGE_DIM))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 model.add(Dense(NUM_CLASS))
-model.add(Activation('relu'))
+model.add(Activation('softmax'))
 
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
@@ -76,8 +76,8 @@ validation_generator = test_datagen.flow_from_directory(
 model.fit_generator(
         train_generator,
         steps_per_epoch=2000 // BATCH_SIZE,
-        epochs=5,
+        epochs=14,
         validation_data=validation_generator,
         validation_steps=800 // BATCH_SIZE)
-model.save_weights('first_try.h5')  # always save your weights after training or during training
+model.save('second_try.h5')  # always save your weights after training or during training
 
