@@ -22,8 +22,10 @@ import csv
 
 # eventually expend the training dataset, because otherwise data is being waisted... initially I eliminated some for a
 # CV set
+# in first few iterations, we're only training on: 3830 images belonging to 12 classes.
+# 63 - 73 % accuracy was success range, pre Titan XP use
 
-IMAGE_DIM = 128
+IMAGE_DIM = 256
 BATCH_SIZE = 50
 NUM_CLASS = 12
 
@@ -76,7 +78,6 @@ def testing_procedure(model):
                     max = pred[i]
                     pred_index = i
             result = [f, CLASSES_DICT[pred_index]]
-            print(result)
             csv_writer.writerow(result)
 
 def main():
@@ -116,9 +117,17 @@ def main():
 
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         # consider a not dumb image size here:
-        model.add(Dense(IMAGE_DIM))
+
+        # fully connected layer:
+        model.add(Dense(128))
         model.add(Activation('relu'))
         model.add(Dropout(0.5))
+
+        # second fully connected layer
+        # model.add(Dense(64))
+        # model.add(Activation('relu'))
+        # model.add(Dropout(0.5))
+
         model.add(Dense(NUM_CLASS))
         model.add(Activation('softmax'))
 
@@ -143,7 +152,7 @@ def main():
         model.fit_generator(
                 train_generator,
                 steps_per_epoch=2000 // BATCH_SIZE,
-                epochs=14,
+                epochs=100,
                 validation_data=validation_generator,
                 validation_steps=800 // BATCH_SIZE)
 
