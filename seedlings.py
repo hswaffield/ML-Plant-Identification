@@ -3,14 +3,17 @@ from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 
-from keras import backend as K
-K.set_image_dim_ordering('tf')
+# from keras import backend as K
+# K.set_image_dim_ordering('tf')
 
 # Do this down the line to see if accuracies get better.
 # Can make this data set way bigger, or not
 
-IMAGE_DIM = 150
-BATCH_SIZE = 70
+# eventually expend the training dataset, because otherwise data is being waisted... initially I eliminated some for a
+# CV set
+
+IMAGE_DIM = 128
+BATCH_SIZE = 50
 NUM_CLASS = 12
 
 # dataaugmentation tools... lots of params to tweak.
@@ -49,7 +52,8 @@ model.add(MaxPooling2D(pool_size=(2, 2)))
 # the model so far outputs 3D feature maps (height, width, features)
 
 model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-model.add(Dense(3 * IMAGE_DIM * IMAGE_DIM))
+# consider a not dumb image size here:
+model.add(Dense(IMAGE_DIM))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 model.add(Dense(NUM_CLASS))
@@ -79,5 +83,8 @@ model.fit_generator(
         epochs=14,
         validation_data=validation_generator,
         validation_steps=800 // BATCH_SIZE)
-model.save('second_try.h5')  # always save your weights after training or during training
+model.save('gpu_second_try.h5')  # always save your weights after training or during training
 
+
+# Then you might as well run the tests... right?
+# the following runs the tests:
