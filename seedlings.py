@@ -38,8 +38,6 @@ import csv
 # Image_dim / reading in / smart reading in
 # test-time data augmentation??
 
-# last git commit version is baaad... maybe size 400 images are shitty ?
-
 IMAGE_DIM = 400
 BATCH_SIZE = 100
 NUM_CLASS = 12
@@ -72,10 +70,10 @@ def get_image(path):
 
         return image.astype('float32')
 
-def square_image(image):
-    # TODO: Change to crop from the center
-    smallest_dimension = min(image.size)
-    return image.crop((0, 0, smallest_dimension, smallest_dimension))
+# def square_image(image):
+#     # TODO: Change to crop from the center
+#     smallest_dimension = min(image.size)
+#     return image.crop((0, 0, smallest_dimension, smallest_dimension))
 
 def testing_procedure(model):
     print("testing model now...")
@@ -101,17 +99,17 @@ def testing_procedure(model):
 def main():
 
     # dataaugmentation tools... lots of params to tweak.
+    # less shift, vertical flips ok...
     train_datagen = ImageDataGenerator(
             rotation_range=90,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
+            width_shift_range=0.1,
+            height_shift_range=0.1,
             rescale=1./255,
             shear_range=0.2,
             zoom_range=0.2,
             horizontal_flip=True,
             vertical_flip=True,
             fill_mode='nearest')
-    # new vertical flip, and 
 
     # train_datagen = ImageDataGenerator(
     #         rescale=1./255,
@@ -142,9 +140,11 @@ def main():
     # model.add(Flatten())
     # loaded a model... skip ahead...
     if len(sys.argv) > 1 and isfile(sys.argv[1]):
+        print("loading and further training provided model.")
         model = load_model(sys.argv[1])
 
     else:
+        print("no model provided, making a new one.")
         model = Sequential()
         model.add(Conv2D(32, (5, 5), activation='relu', input_shape=(IMAGE_DIM, IMAGE_DIM, 3)))
         model.add(MaxPooling2D(pool_size=(2, 2)))
