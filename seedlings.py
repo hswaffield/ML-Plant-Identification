@@ -1,7 +1,8 @@
 from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
+import sys
 
 # To enable little bonuses:
 from time import time
@@ -35,6 +36,8 @@ import csv
 # data augmentation
 # epoch count
 # Image_dim / reading in / smart reading in
+
+# last git commit version is baaad... maybe size 400 images are shitty ?
 
 IMAGE_DIM = 400
 BATCH_SIZE = 100
@@ -96,45 +99,49 @@ def testing_procedure(model):
 
 def main():
 
-        # dataaugmentation tools... lots of params to tweak.
-        # datagen = ImageDataGenerator(
-        #         rotation_range=40,
-        #         width_shift_range=0.2,
-        #         height_shift_range=0.2,
-        #         rescale=1./255,
-        #         shear_range=0.2,
-        #         zoom_range=0.2,
-        #         horizontal_flip=True,
-        #         fill_mode='nearest')
+    # dataaugmentation tools... lots of params to tweak.
+    # datagen = ImageDataGenerator(
+    #         rotation_range=40,
+    #         width_shift_range=0.2,
+    #         height_shift_range=0.2,
+    #         rescale=1./255,
+    #         shear_range=0.2,
+    #         zoom_range=0.2,
+    #         horizontal_flip=True,
+    #         fill_mode='nearest')
 
-        train_datagen = ImageDataGenerator(
-                rescale=1./255,
-                shear_range=0.2,
-                zoom_range=0.2,
-                horizontal_flip=True)
+    train_datagen = ImageDataGenerator(
+            rescale=1./255,
+            shear_range=0.2,
+            zoom_range=0.2,
+            horizontal_flip=True)
 
-        test_datagen = ImageDataGenerator(rescale=1./255)
+    test_datagen = ImageDataGenerator(rescale=1./255)
 
 
-        # alternate model structure:
-        # model = Sequential()
-        # model.add(Conv2D(32, (5, 5), padding='same', activation='relu', input_shape=inputShape))
-        # model.add(Dropout(0.1))
-        #
-        # model.add(Conv2D(64, (5, 5), padding='same', activation='relu'))
-        # model.add(Dropout(0.1))
-        #
-        # model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
-        # model.add(MaxPooling2D())
-        #
-        # model.add(Conv2D(256, (3, 3), padding='same', activation='relu'))
-        # model.add(MaxPooling2D())
-        #
-        # model.add(Conv2D(512, (3, 3), padding='same', activation='relu'))
-        # model.add(MaxPooling2D())
-        #
-        # model.add(Flatten())
+    # alternate model structure:
+    # model = Sequential()
+    # model.add(Conv2D(32, (5, 5), padding='same', activation='relu', input_shape=inputShape))
+    # model.add(Dropout(0.1))
+    #
+    # model.add(Conv2D(64, (5, 5), padding='same', activation='relu'))
+    # model.add(Dropout(0.1))
+    #
+    # model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
+    # model.add(MaxPooling2D())
+    #
+    # model.add(Conv2D(256, (3, 3), padding='same', activation='relu'))
+    # model.add(MaxPooling2D())
+    #
+    # model.add(Conv2D(512, (3, 3), padding='same', activation='relu'))
+    # model.add(MaxPooling2D())
+    #
+    # model.add(Flatten())
+    # loaded a model... skip ahead...
+    if isfile(sys.argv[1]):
+        model = load_model(sys.argv[1])
 
+    else:
         model = Sequential()
         model.add(Conv2D(32, (5, 5), activation='relu', input_shape=(IMAGE_DIM, IMAGE_DIM, 3)))
         model.add(MaxPooling2D(pool_size=(2, 2)))
@@ -164,36 +171,36 @@ def main():
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-        # read in the input data:
+    # read in the input data:
 
-        train_generator = train_datagen.flow_from_directory(
-                CURRENT_TRAIN_SET,  # this is the target directory
-                target_size=(IMAGE_DIM, IMAGE_DIM),  # all images will be resized to 150x150
-                batch_size=BATCH_SIZE,
-                class_mode='categorical')  # since we use binary_crossentropy loss, we need binary labels
+    train_generator = train_datagen.flow_from_directory(
+            CURRENT_TRAIN_SET,  # this is the target directory
+            target_size=(IMAGE_DIM, IMAGE_DIM),  # all images will be resized to 150x150
+            batch_size=BATCH_SIZE,
+            class_mode='categorical')  # since we use binary_crossentropy loss, we need binary labels
 
-        # make a cv set? - validation generator
-        validation_generator = test_datagen.flow_from_directory(
-                'validation',
-                target_size=(IMAGE_DIM, IMAGE_DIM),
-                batch_size=BATCH_SIZE,
-                class_mode='categorical')
+    # make a cv set? - validation generator
+    validation_generator = test_datagen.flow_from_directory(
+            'validation',
+            target_size=(IMAGE_DIM, IMAGE_DIM),
+            batch_size=BATCH_SIZE,
+            class_mode='categorical')
 
-        model.fit_generator(
-                train_generator,
-                steps_per_epoch=2000 // BATCH_SIZE,
-                epochs=NUM_EPOCHS,
-                validation_data=validation_generator,
-                validation_steps=800 // BATCH_SIZE)
+    model.fit_generator(
+            train_generator,
+            steps_per_epoch=2000 // BATCH_SIZE,
+            epochs=NUM_EPOCHS,
+            validation_data=validation_generator,
+            validation_steps=800 // BATCH_SIZE)
 
-        model_name = outfile("seedling_cnn_", "h5")
+    model_name = outfile("seedling_cnn_", "h5")
 
-        model.save(model_name)  # always save your weights after training or during training
+    model.save(model_name)  # always save your weights after training or during training
 
 
-        # Then you might as well run the tests... right?
-        # the following runs the tests:
-        testing_procedure(model)
+    # Then you might as well run the tests... right?
+    # the following runs the tests:
+    testing_procedure(model)
 
 
 if __name__ == '__main__':
