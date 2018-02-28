@@ -33,16 +33,17 @@ import csv
 # TODO: ideas to tweak:
 # actually feeding in all the data... X
 # completely different cnn architecture...
-# data augmentation
+# data augmentation ... more of it...
 # epoch count
 # Image_dim / reading in / smart reading in
+# test-time data augmentation??
 
 # last git commit version is baaad... maybe size 400 images are shitty ?
 
 IMAGE_DIM = 400
 BATCH_SIZE = 100
 NUM_CLASS = 12
-NUM_EPOCHS = 80
+NUM_EPOCHS = 45
 CURRENT_TRAIN_SET = 'train'
 
 # Files to scan:
@@ -61,7 +62,7 @@ def outfile(dataname, extension):
 # Thanks Hans:
 def get_image(path):
     with Image.open(path) as image:
-        image = square_image(image)
+        # image = square_image(image)
         image = image.resize((IMAGE_DIM, IMAGE_DIM))
         image = np.array(image) / 255
 
@@ -100,21 +101,22 @@ def testing_procedure(model):
 def main():
 
     # dataaugmentation tools... lots of params to tweak.
-    # datagen = ImageDataGenerator(
-    #         rotation_range=40,
-    #         width_shift_range=0.2,
-    #         height_shift_range=0.2,
-    #         rescale=1./255,
-    #         shear_range=0.2,
-    #         zoom_range=0.2,
-    #         horizontal_flip=True,
-    #         fill_mode='nearest')
-
     train_datagen = ImageDataGenerator(
+            rotation_range=40,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
             rescale=1./255,
             shear_range=0.2,
             zoom_range=0.2,
-            horizontal_flip=True)
+            horizontal_flip=True,
+            vertical__flip=True,
+            fill_mode='nearest')
+
+    # train_datagen = ImageDataGenerator(
+    #         rescale=1./255,
+    #         shear_range=0.2,
+    #         zoom_range=0.2,
+    #         horizontal_flip=True)
 
     test_datagen = ImageDataGenerator(rescale=1./255)
 
@@ -138,7 +140,7 @@ def main():
     #
     # model.add(Flatten())
     # loaded a model... skip ahead...
-    if isfile(sys.argv[1]):
+    if len(sys.argv) > 1 and isfile(sys.argv[1]):
         model = load_model(sys.argv[1])
 
     else:
@@ -194,7 +196,7 @@ def main():
             validation_steps=800 // BATCH_SIZE)
 
     model_name = outfile("seedling_cnn_", "h5")
-
+    print("saving newest model to: " + model_name)
     model.save(model_name)  # always save your weights after training or during training
 
 
