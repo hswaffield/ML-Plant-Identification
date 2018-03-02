@@ -1,5 +1,6 @@
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential, load_model
+from keras.applications.xception import Xception
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 import sys
@@ -38,10 +39,16 @@ import csv
 # Image_dim / reading in / smart reading in
 # test-time data augmentation??
 
-IMAGE_DIM = 400
-BATCH_SIZE = 100
+# best one so far: xception_seedling_cnn__model_1520015393.h5
+
+# some people suggest using size = 299...
+TEST_SET_SIZE = 4750
+# IMAGE_DIM = 400
+IMAGE_DIM = 299
+# BATCH_SIZE = 100
+BATCH_SIZE = 1
 NUM_CLASS = 12
-NUM_EPOCHS = 45
+NUM_EPOCHS = 30
 CURRENT_TRAIN_SET = 'train'
 
 # Files to scan:
@@ -120,59 +127,47 @@ def main():
     test_datagen = ImageDataGenerator(rescale=1./255)
 
 
-    # alternate model structure:
-    # model = Sequential()
-    # model.add(Conv2D(32, (5, 5), padding='same', activation='relu', input_shape=inputShape))
-    # model.add(Dropout(0.1))
-    #
-    # model.add(Conv2D(64, (5, 5), padding='same', activation='relu'))
-    # model.add(Dropout(0.1))
-    #
-    # model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
-    # model.add(MaxPooling2D())
-    #
-    # model.add(Conv2D(256, (3, 3), padding='same', activation='relu'))
-    # model.add(MaxPooling2D())
-    #
-    # model.add(Conv2D(512, (3, 3), padding='same', activation='relu'))
-    # model.add(MaxPooling2D())
-    #
-    # model.add(Flatten())
-    # loaded a model... skip ahead...
     if len(sys.argv) > 1 and isfile(sys.argv[1]):
         print("loading and further training provided model.")
         model = load_model(sys.argv[1])
 
     else:
+        # can try to use Xception model:
+
         print("no model provided, making a new one.")
-        model = Sequential()
-        model.add(Conv2D(32, (5, 5), activation='relu', input_shape=(IMAGE_DIM, IMAGE_DIM, 3)))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+        # model = Sequential()
+        # model.add(Conv2D(32, (5, 5), padding='same', activation='relu', input_shape=(IMAGE_DIM, IMAGE_DIM, 3)))
+        # model.add(MaxPooling2D(pool_size=(2, 2)))
+        #
+        # model.add(Conv2D(64, (5, 5), padding='same', activation='relu'))
+        # model.add(MaxPooling2D(pool_size=(2, 2)))
+        #
+        # model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
+        # model.add(MaxPooling2D(pool_size=(2, 2)))
+        #
+        # model.add(Conv2D(256, (3, 3), padding='same', activation='relu'))
+        # model.add(MaxPooling2D(pool_size=(2, 2)))
+        #
+        # model.add(Conv2D(512, (2, 2), padding='same', activation='relu'))
+        # model.add(MaxPooling2D(pool_size=(2, 2)))
+        #
+        # # the model so far outputs 3D feature maps (height, width, features)
+        #
+        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        # # consider a not dumb image size here:
+        #
+        # # fully connected layer:
+        # model.add(Dense(128))
+        # model.add(Activation('relu'))
+        # model.add(Dropout(0.5))
+        #
+        # model.add(Dense(NUM_CLASS))
+        # model.add(Activation('softmax'))
+        #
 
-        model.add(Conv2D(64, (5, 5), activation='relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-
-        model.add(Conv2D(128, (3, 3), activation='relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-
-        model.add(Conv2D(256, (3, 3), activation='relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-
-        # the model so far outputs 3D feature maps (height, width, features)
-
-        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        # consider a not dumb image size here:
-
-        # fully connected layer:
-        model.add(Dense(128))
-        model.add(Activation('relu'))
-        model.add(Dropout(0.5))
-
-        model.add(Dense(NUM_CLASS))
-        model.add(Activation('softmax'))
+        model = Xception(weights=None, classes=12)
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
 
     # read in the input data:
 
@@ -191,12 +186,12 @@ def main():
 
     model.fit_generator(
             train_generator,
-            steps_per_epoch=2000 // BATCH_SIZE,
+            steps_per_epoch=TEST_SET_SIZE // BATCH_SIZE,
             epochs=NUM_EPOCHS,
             validation_data=validation_generator,
             validation_steps=800 // BATCH_SIZE)
 
-    model_name = outfile("seedling_cnn_", "h5")
+    model_name = outfile("xception_seedling_cnn_", "h5")
     print("saving newest model to: " + model_name)
     model.save(model_name)  # always save your weights after training or during training
 
