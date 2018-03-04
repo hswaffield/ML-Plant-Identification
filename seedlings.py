@@ -34,21 +34,23 @@ import csv
 # TODO: ideas to tweak:
 # actually feeding in all the data... X
 # completely different cnn architecture...
-# data augmentation ... more of it...
+# data augmentation ... more of it... at test time, so you can then average the samples...
 # epoch count
 # Image_dim / reading in / smart reading in
 # test-time data augmentation??
 
-# best one so far: xception_seedling_cnn__model_1520015393.h5
+# best ones so far, in descending order:
+# xception_seedling_cnn__model_1520027537.h5
+# xception_seedling_cnn__model_1520015393.h5
 
 # some people suggest using size = 299...
 TEST_SET_SIZE = 4750
 # IMAGE_DIM = 400
 IMAGE_DIM = 299
 # BATCH_SIZE = 100
-BATCH_SIZE = 1
+BATCH_SIZE = 30
 NUM_CLASS = 12
-NUM_EPOCHS = 30
+NUM_EPOCHS = 600
 CURRENT_TRAIN_SET = 'train'
 
 # Files to scan:
@@ -85,6 +87,7 @@ def get_image(path):
 def testing_procedure(model):
     print("testing model now...")
     submission_name = outfile("competition_submission", "csv")
+    # num_output = outfile(("nums_predictions", "csv"))
     print("will write to: " + submission_name)
     with open(submission_name, 'w') as csvfile:
         csv_writer = csv.writer(csvfile)
@@ -103,8 +106,22 @@ def testing_procedure(model):
             result = [f, CLASSES_DICT[pred_index]]
             csv_writer.writerow(result)
 
-def main():
+    # not clean to do same computations again:
+    # TODO: write a new script to wrangle these files:
+    # print("will write to: " + num_output)
+    # with open(num_output, 'w') as csvfile:
+    #     csv_writer = csv.writer(csvfile)
+    #     csv_writer.writerow(['file', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'])
+    #
+    #     for f in TEST_FILES:
+    #         image = get_image(str('test/' + f))
+    #         pred = model.predict(np.expand_dims(image, axis=0))
+    #         pred = pred.tolist()
+    #         result = pred.insert(0, f)
+    #         csv_writer.writerow(result)
 
+def main():
+    global NUM_EPOCHS
     # dataaugmentation tools... lots of params to tweak.
     # less shift, vertical flips ok...
     train_datagen = ImageDataGenerator(
@@ -169,36 +186,42 @@ def main():
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-    # read in the input data:
+    if len(sys.argv) > 2 and sys.argv[2] == "skip":
+        testing_procedure(model)
 
-    train_generator = train_datagen.flow_from_directory(
-            CURRENT_TRAIN_SET,  # this is the target directory
-            target_size=(IMAGE_DIM, IMAGE_DIM),  # all images will be resized to 150x150
-            batch_size=BATCH_SIZE,
-            class_mode='categorical')  # since we use binary_crossentropy loss, we need binary labels
+    elif len(sys.argv) > 2 and sys.argv[2] != "skip":
+        NUM_EPOCHS = int(sys.argv[2])
 
-    # make a cv set? - validation generator
-    validation_generator = test_datagen.flow_from_directory(
-            'validation',
-            target_size=(IMAGE_DIM, IMAGE_DIM),
-            batch_size=BATCH_SIZE,
-            class_mode='categorical')
+        # read in the input data:
 
-    model.fit_generator(
-            train_generator,
-            steps_per_epoch=TEST_SET_SIZE // BATCH_SIZE,
-            epochs=NUM_EPOCHS,
-            validation_data=validation_generator,
-            validation_steps=800 // BATCH_SIZE)
+        train_generator = train_datagen.flow_from_directory(
+                CURRENT_TRAIN_SET,  # this is the target directory
+                target_size=(IMAGE_DIM, IMAGE_DIM),  # all images will be resized to 150x150
+                batch_size=BATCH_SIZE,
+                class_mode='categorical')  # since we use binary_crossentropy loss, we need binary labels
 
-    model_name = outfile("xception_seedling_cnn_", "h5")
-    print("saving newest model to: " + model_name)
-    model.save(model_name)  # always save your weights after training or during training
+        # make a cv set? - validation generator
+        validation_generator = test_datagen.flow_from_directory(
+                'validation',
+                target_size=(IMAGE_DIM, IMAGE_DIM),
+                batch_size=BATCH_SIZE,
+                class_mode='categorical')
+
+        model.fit_generator(
+                train_generator,
+                steps_per_epoch=TEST_SET_SIZE // BATCH_SIZE,
+                epochs=NUM_EPOCHS,
+                validation_data=validation_generator,
+                validation_steps=800 // BATCH_SIZE)
+
+        model_name = outfile("xception_seedling_cnn_", "h5")
+        print("saving newest model to: " + model_name)
+        model.save(model_name)  # always save your weights after training or during training
 
 
-    # Then you might as well run the tests... right?
-    # the following runs the tests:
-    testing_procedure(model)
+        # Then you might as well run the tests... right?
+        # the following runs the tests:
+        testing_procedure(model)
 
 
 if __name__ == '__main__':
