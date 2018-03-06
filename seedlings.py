@@ -48,9 +48,9 @@ TEST_SET_SIZE = 4750
 # IMAGE_DIM = 400
 IMAGE_DIM = 299
 # BATCH_SIZE = 100
-BATCH_SIZE = 30
+BATCH_SIZE = 10
 NUM_CLASS = 12
-NUM_EPOCHS = 600
+NUM_EPOCHS = 1000
 CURRENT_TRAIN_SET = 'train'
 
 # Files to scan:
@@ -126,11 +126,11 @@ def main():
     # less shift, vertical flips ok...
     train_datagen = ImageDataGenerator(
             rotation_range=90,
-            width_shift_range=0.1,
-            height_shift_range=0.1,
+            width_shift_range=0.3,
+            height_shift_range=0.3,
             rescale=1./255,
-            shear_range=0.2,
-            zoom_range=0.2,
+            shear_range=0.3,
+            zoom_range=0.3,
             horizontal_flip=True,
             vertical_flip=True,
             fill_mode='nearest')
@@ -188,40 +188,41 @@ def main():
 
     if len(sys.argv) > 2 and sys.argv[2] == "skip":
         testing_procedure(model)
+        sys.exit()
 
     elif len(sys.argv) > 2 and sys.argv[2] != "skip":
         NUM_EPOCHS = int(sys.argv[2])
 
-        # read in the input data:
+    # read in the input data:
 
-        train_generator = train_datagen.flow_from_directory(
-                CURRENT_TRAIN_SET,  # this is the target directory
-                target_size=(IMAGE_DIM, IMAGE_DIM),  # all images will be resized to 150x150
-                batch_size=BATCH_SIZE,
-                class_mode='categorical')  # since we use binary_crossentropy loss, we need binary labels
+    train_generator = train_datagen.flow_from_directory(
+            CURRENT_TRAIN_SET,  # this is the target directory
+            target_size=(IMAGE_DIM, IMAGE_DIM),  # all images will be resized to 150x150
+            batch_size=BATCH_SIZE,
+            class_mode='categorical')  # since we use binary_crossentropy loss, we need binary labels
 
-        # make a cv set? - validation generator
-        validation_generator = test_datagen.flow_from_directory(
-                'validation',
-                target_size=(IMAGE_DIM, IMAGE_DIM),
-                batch_size=BATCH_SIZE,
-                class_mode='categorical')
+    # make a cv set? - validation generator
+    validation_generator = test_datagen.flow_from_directory(
+            'validation',
+            target_size=(IMAGE_DIM, IMAGE_DIM),
+            batch_size=BATCH_SIZE,
+            class_mode='categorical')
 
-        model.fit_generator(
-                train_generator,
-                steps_per_epoch=TEST_SET_SIZE // BATCH_SIZE,
-                epochs=NUM_EPOCHS,
-                validation_data=validation_generator,
-                validation_steps=800 // BATCH_SIZE)
+    model.fit_generator(
+            train_generator,
+            steps_per_epoch=TEST_SET_SIZE // BATCH_SIZE,
+            epochs=NUM_EPOCHS,
+            validation_data=validation_generator,
+            validation_steps=800 // BATCH_SIZE)
 
-        model_name = outfile("xception_seedling_cnn_", "h5")
-        print("saving newest model to: " + model_name)
-        model.save(model_name)  # always save your weights after training or during training
+    model_name = outfile("xception_seedling_cnn_", "h5")
+    print("saving newest model to: " + model_name)
+    model.save(model_name)  # always save your weights after training or during training
 
 
-        # Then you might as well run the tests... right?
-        # the following runs the tests:
-        testing_procedure(model)
+    # Then you might as well run the tests... right?
+    # the following runs the tests:
+    testing_procedure(model)
 
 
 if __name__ == '__main__':
