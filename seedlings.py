@@ -1,6 +1,8 @@
 from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential, load_model
+from keras.models import Sequential, Model, load_model
 from keras.applications.xception import Xception
+from keras.applications.inception_resnet_v2 import InceptionResNetV2
+from keras.applications.inception_v3 import InceptionV3
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 import sys
@@ -38,6 +40,8 @@ import csv
 # epoch count
 # Image_dim / reading in / smart reading in
 # test-time data augmentation??
+#https://towardsdatascience.com/transfer-learning-using-keras-d804b2e04ef8
+
 
 # best ones so far, in descending order:
 # xception_seedling_cnn__model_1520027537.h5
@@ -45,12 +49,14 @@ import csv
 
 # some people suggest using size = 299...
 TEST_SET_SIZE = 4750
-# IMAGE_DIM = 400
-IMAGE_DIM = 299
+IMAGE_DIM = 400
+
+# IMAGE_DIM = 299
+# ^^ for use with vanilla xception
 # BATCH_SIZE = 100
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 NUM_CLASS = 12
-NUM_EPOCHS = 1000
+NUM_EPOCHS = 100
 CURRENT_TRAIN_SET = 'train'
 
 # Files to scan:
@@ -120,6 +126,41 @@ def testing_procedure(model):
     #         result = pred.insert(0, f)
     #         csv_writer.writerow(result)
 
+
+def make_xception():
+    return Xception(weights=None, classes=12, input_shape=(IMAGE_DIM, IMAGE_DIM, 3))
+
+def make_inception_res_net(img_dim):
+    model = InceptionV3(weights="imagenet", include_top=False, input_shape=(img_dim, img_dim, 3))
+
+    # could also toggle to inception...
+
+    # model = InceptionResNetV2(weights="imagenet", include_top=False, input_shape=(img_dim, img_dim, 3))
+
+    # Consider preventing the convolutions from training, if dataset is super small:
+    # This would essentially make the new model a linear classifier on features extracted by the InceptionResNetV2
+    # for layer in model.layers:
+    #     layer.trainable = False
+
+    # alternatively, only freeze a few (because these higher level features are definitely relevant):
+    # for layer in model.layers[:5]:
+    #     layer.trainable = False
+
+    # other keras model api
+    # Adding custom Layers
+    x = model.output
+    x = Flatten()(x)
+    x = Dense(1024, activation="relu")(x)
+    x = Dropout(0.5)(x)
+    x = Dense(1024, activation="relu")(x)
+    predictions = Dense(CLASSES, activation="softmax")(x)
+
+    # creating the final model
+    model_final = Model(input=model.input, output=predictions)
+
+    return model_final
+
+
 def main():
     global NUM_EPOCHS
     # dataaugmentation tools... lots of params to tweak.
@@ -152,39 +193,19 @@ def main():
         # can try to use Xception model:
 
         print("no model provided, making a new one.")
-        # model = Sequential()
-        # model.add(Conv2D(32, (5, 5), padding='same', activation='relu', input_shape=(IMAGE_DIM, IMAGE_DIM, 3)))
-        # model.add(MaxPooling2D(pool_size=(2, 2)))
-        #
-        # model.add(Conv2D(64, (5, 5), padding='same', activation='relu'))
-        # model.add(MaxPooling2D(pool_size=(2, 2)))
-        #
-        # model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
-        # model.add(MaxPooling2D(pool_size=(2, 2)))
-        #
-        # model.add(Conv2D(256, (3, 3), padding='same', activation='relu'))
-        # model.add(MaxPooling2D(pool_size=(2, 2)))
-        #
-        # model.add(Conv2D(512, (2, 2), padding='same', activation='relu'))
-        # model.add(MaxPooling2D(pool_size=(2, 2)))
-        #
-        # # the model so far outputs 3D feature maps (height, width, features)
-        #
-        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        # # consider a not dumb image size here:
-        #
-        # # fully connected layer:
-        # model.add(Dense(128))
-        # model.add(Activation('relu'))
-        # model.add(Dropout(0.5))
-        #
-        # model.add(Dense(NUM_CLASS))
-        # model.add(Activation('softmax'))
-        #
 
-        model = Xception(weights=None, classes=12)
+        # model = make_xception()
+        # might as well make the images bigger, right ?
+        # model = make_inception_res_net(IMAGE_DIM)
+
+        model = make_xception()
+
+
+        # TODO: try transfer learning! using adifferent model, that is already trained
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+        model.summary()
 
     if len(sys.argv) > 2 and sys.argv[2] == "skip":
         testing_procedure(model)
